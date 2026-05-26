@@ -1,0 +1,9 @@
+streamlit
+pandas
+openpyxl
+scikit-learn
+plotly
+wordcloud
+google-play-scraper
+nltk
+Sastrawi
