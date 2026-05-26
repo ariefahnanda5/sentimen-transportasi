@@ -7,3 +7,4 @@ wordcloud
 google-play-scraper
 nltk
 Sastrawi
+streamlit-option-menu
