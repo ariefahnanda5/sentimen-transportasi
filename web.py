@@ -45,6 +45,7 @@ with st.sidebar:
             "Pembersihan Data", 
             "Support Vector Machine (SVM)",         
             "Naive Bayes", 
+            "SVM vs NB",
             "Dashboard & Visualisasi"
         ],
         icons=["house", "cloud-download", "brush", "cpu", "activity", "bar-chart-line"],
@@ -539,16 +540,11 @@ elif selected == "Naive Bayes":
             col4.metric("F1-Score", f"{m['f1']*100:.2f}%")
             st.info("💡 **Analisis:** Naive Bayes menghitung probabilitas kemunculan setiap kata untuk menentukan sentimen.")
 
-# --- 6. HALAMAN DASHBOARD ---
-elif selected == "Dashboard & Visualisasi":
-    st.header("📊 Dashboard & Visualisasi Analisis Sentimen")
-
+# --- 6. Perbandingan SVM vs NB#
+elif selected == "SVM vs NB":
+    st.header("📊Perbandingan Performa Support Vector Machine vs Naive Bayes")
     if 'processed_data' in st.session_state and 'svm_metrics' in st.session_state:
         df_vis = st.session_state['processed_data']
-        
-        # =========================================================================
-        # ⚔️ BAGIAN 1: KOMPARASI PERFORMA GLOBAL (SVM VS NAIVE BAYES)
-        # =========================================================================
         st.subheader("⚔️ Komparasi Performa: SVM vs Naive Bayes")
         
         svm = st.session_state['svm_metrics']
@@ -582,17 +578,22 @@ elif selected == "Dashboard & Visualisasi":
         winner = "Support Vector Machine (SVM)" if svm['acc'] > nb['acc'] else "Naive Bayes"
         st.info(f"💡 **Kesimpulan Pengujian:** Berdasarkan metrik akurasi, algoritma **{winner}** memberikan hasil klasifikasi yang lebih optimal untuk dataset ulasan ini.")
 
-        # =========================================================================
-        # 📈 BAGIAN 2: BREAKDOWN CHART & WORDCLOUD PER APLIKASI (FIXED SAFETY CHECK)
-        # =========================================================================
-        st.markdown("---")
+# --- 7. HALAMAN DASHBOARD ---
+elif selected == "Dashboard & Visualisasi":
+    st.header("📊 Dashboard & Visualisasi Analisis Sentimen")
+
+    # Ambil data dari memori RAM Session State
+    df_vis = st.session_state.get('processed_data', None)
+
+    # Pastikan data sudah tersedia di memori sebelum membuat grafik
+    if df_vis is not None:
         st.subheader("📱 Breakdown Analisis Sentimen & Wordcloud Per Aplikasi")
         
-        # 🚀 KUNCI PENYELAMAT: Cek apakah kolom 'Nama_Aplikasi' benar-benar ada di data
+        # JALUR A: JIKA TERDETEKSI KOLOM 'Nama_Aplikasi' (Hasil Multi-Upload / Scraping Baru)
         if 'Nama_Aplikasi' in df_vis.columns:
-            st.write("Berikut adalah visualisasi distribusi sentimen dan kata kunci populer yang dipisah untuk masing-masing aplikasi transportasi online:")
+            st.write("Berikut adalah visualisasi distribusi sentimen dan kata kunci populer yang dipisah untuk masing-masing aplikasi:")
             
-            # Ambil daftar aplikasi unik secara otomatis (Gojek, Grab, Maxim, inDrive)
+            # Ambil daftar aplikasi unik secara otomatis (GOJEK, GRAB, MAXIM, INDRIVE)
             apps_terdeteksi = sorted(list(df_vis['Nama_Aplikasi'].unique()))
 
             # Tampilkan grafik berdampingan per aplikasi dalam wadah expander
@@ -628,32 +629,41 @@ elif selected == "Dashboard & Visualisasi":
                             
                             st.image(
                                 wordcloud_app.to_array(), 
-                                caption=f"WordCloud Kata Kunci Terpopuler pada Aplikasi {nama_app}", 
+                                caption=f"WordCloud Kata Kunci Terpopuler ({nama_app})", 
                                 use_container_width=True
                             )
                         else:
-                            st.write("Teks ulasan bersih tidak mencukupi untuk membuat Wordcloud.")
+                            st.write("Teks ulasan tidak mencukupi untuk membuat Wordcloud.")
         
+        # JALUR B: JIKA KOLOM 'Nama_Aplikasi' TIDAK ADA (DATA TUNGGAL)
         else:
-            # 💡 JIKA BELUM ADA KOLOM (Data Tunggal / Scraping Versi Lama), TAMPILKAN SECARA GLOBAL SAJA
-            st.write("Berikut adalah visualisasi distribusi sentimen dan kata kunci populer secara menyeluruh (Global Dataset):")
-            
+            st.write("Berikut adalah visualisasi distribusi sentimen dan kata kunci populer secara menyeluruh dari dataset:")
             col_pie, col_wc = st.columns([1, 1])
+            
+            # 1. Pie Chart Global (Kiri)
             with col_pie:
                 fig_pie_global = px.pie(
                     df_vis, names='Sentiment', color='Sentiment',
                     color_discrete_map={'Positif':'#2ecc71', 'Negatif':'#e74c3c'},
-                    hole=0.4, title="Persentase Sentimen Global"
+                    hole=0.4, title="Persentase Sentimen Total Dataset"
                 )
                 fig_pie_global.update_traces(textposition='inside', textinfo='percent+label')
                 st.plotly_chart(fig_pie_global, use_container_width=True)
                 
+            # 2. Wordcloud Global (Kanan)
             with col_wc:
                 text_global = " ".join(df_vis['text_clean'].astype(str))
                 if text_global.strip():
-                    wordcloud_global = WordCloud(width=600, height=350, background_color='white', colormap='plasma', max_words=50).generate(text_global)
+                    wordcloud_global = WordCloud(
+                        width=600, height=350, 
+                        background_color='white', 
+                        colormap='plasma', 
+                        max_words=50
+                    ).generate(text_global)
                     st.image(wordcloud_global.to_array(), caption="WordCloud Kata Kunci Global", use_container_width=True)
                 else:
-                    st.write("Teks tidak mencukupi.")
+                    st.write("Teks ulasan tidak mencukupi untuk membuat Wordcloud.")
+                    
     else:
+        # Peringatan jika memori RAM benar-benar kosong total (belum ada proses data sama sekali)
         st.warning("⚠️ Data belum diproses atau dimuat ke sistem. Silakan lakukan proses di halaman 'Input & Scraping Data' terlebih dahulu.")
