@@ -579,6 +579,7 @@ elif selected == "SVM vs NB":
         st.info(f"💡 **Kesimpulan Pengujian:** Berdasarkan metrik akurasi, algoritma **{winner}** memberikan hasil klasifikasi yang lebih optimal untuk dataset ulasan ini.")
 
 # --- 7. HALAMAN DASHBOARD ---
+# --- 5. HALAMAN DASHBOARD & VISUALISASI (5 DIAGRAM VERSION) ---
 elif selected == "Dashboard & Visualisasi":
     st.header("📊 Dashboard & Visualisasi Analisis Sentimen")
 
@@ -587,11 +588,49 @@ elif selected == "Dashboard & Visualisasi":
 
     # Pastikan data sudah tersedia di memori sebelum membuat grafik
     if df_vis is not None:
+        
+        # =========================================================================
+        # 🌐 DIAGRAM 1: GABUNGAN SELURUH APLIKASI (GLOBAL TOTAL)
+        # =========================================================================
+        st.subheader("🌐 Analisis Sentimen Gabungan (Seluruh Aplikasi)")
+        st.write("Visualisasi di bawah ini menampilkan akumulasi data ulasan dari seluruh aplikasi transportasi online secara menyeluruh:")
+        
+        col_global_pie, col_global_wc = st.columns([1, 1])
+        
+        # 1. Pie Chart Global
+        with col_global_pie:
+            fig_pie_global = px.pie(
+                df_vis, names='Sentiment', color='Sentiment',
+                color_discrete_map={'Positif':'#2ecc71', 'Negatif':'#e74c3c'},
+                hole=0.4, title="Persentase Sentimen Total Kombinasi Dataset"
+            )
+            fig_pie_global.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(fig_pie_global, use_container_width=True)
+            
+        # 2. Wordcloud Global
+        with col_global_wc:
+            text_global = " ".join(df_vis['text_clean'].astype(str))
+            if text_global.strip():
+                wordcloud_global = WordCloud(
+                    width=600, height=350, 
+                    background_color='white', 
+                    colormap='plasma', 
+                    max_words=50
+                ).generate(text_global)
+                st.image(wordcloud_global.to_array(), caption="WordCloud Kata Kunci Global (Seluruh Aplikasi)", use_container_width=True)
+            else:
+                st.write("Teks ulasan tidak mencukupi untuk membuat Wordcloud Global.")
+
+        st.markdown("---")
+
+        # =========================================================================
+        # 📱 DIAGRAM 2 - 5: BREAKDOWN PER APLIKASI SPECIFIC
+        # =========================================================================
         st.subheader("📱 Breakdown Analisis Sentimen & Wordcloud Per Aplikasi")
         
-        # JALUR A: JIKA TERDETEKSI KOLOM 'Nama_Aplikasi' (Hasil Multi-Upload / Scraping Baru)
+        # JALUR A: JIKA TERDETEKSI KOLOM 'Nama_Aplikasi'
         if 'Nama_Aplikasi' in df_vis.columns:
-            st.write("Berikut adalah visualisasi distribusi sentimen dan kata kunci populer yang dipisah untuk masing-masing aplikasi:")
+            st.write("Berikut adalah rincian distribusi sentimen dan kata kunci populer yang dipisah spesifik per aplikasi:")
             
             # Ambil daftar aplikasi unik secara otomatis (GOJEK, GRAB, MAXIM, INDRIVE)
             apps_terdeteksi = sorted(list(df_vis['Nama_Aplikasi'].unique()))
@@ -603,7 +642,7 @@ elif selected == "Dashboard & Visualisasi":
                 with st.expander(f"🟢 ANALISIS UNTUK APLIKASI: {nama_app} ({len(df_app)} Data)", expanded=True):
                     col_pie, col_wc = st.columns([1, 1])
                     
-                    # 1. Pie Chart (Kiri)
+                    # Pie Chart Aplikasi
                     with col_pie:
                         if not df_app.empty:
                             fig_pie_app = px.pie(
@@ -616,7 +655,7 @@ elif selected == "Dashboard & Visualisasi":
                         else:
                             st.write("Tidak ada data ulasan untuk aplikasi ini.")
                     
-                    # 2. Wordcloud (Kanan)
+                    # Wordcloud Aplikasi
                     with col_wc:
                         text_app = " ".join(df_app['text_clean'].astype(str))
                         if text_app.strip():
@@ -635,34 +674,9 @@ elif selected == "Dashboard & Visualisasi":
                         else:
                             st.write("Teks ulasan tidak mencukupi untuk membuat Wordcloud.")
         
-        # JALUR B: JIKA KOLOM 'Nama_Aplikasi' TIDAK ADA (DATA TUNGGAL)
+        # JALUR B: JIKA DATA YANG DIUPLOAD HANYA 1 APLIKASI (TIDAK ADA KOLOM NAMA_APLIKASI)
         else:
-            st.write("Berikut adalah visualisasi distribusi sentimen dan kata kunci populer secara menyeluruh dari dataset:")
-            col_pie, col_wc = st.columns([1, 1])
-            
-            # 1. Pie Chart Global (Kiri)
-            with col_pie:
-                fig_pie_global = px.pie(
-                    df_vis, names='Sentiment', color='Sentiment',
-                    color_discrete_map={'Positif':'#2ecc71', 'Negatif':'#e74c3c'},
-                    hole=0.4, title="Persentase Sentimen Total Dataset"
-                )
-                fig_pie_global.update_traces(textposition='inside', textinfo='percent+label')
-                st.plotly_chart(fig_pie_global, use_container_width=True)
-                
-            # 2. Wordcloud Global (Kanan)
-            with col_wc:
-                text_global = " ".join(df_vis['text_clean'].astype(str))
-                if text_global.strip():
-                    wordcloud_global = WordCloud(
-                        width=600, height=350, 
-                        background_color='white', 
-                        colormap='plasma', 
-                        max_words=50
-                    ).generate(text_global)
-                    st.image(wordcloud_global.to_array(), caption="WordCloud Kata Kunci Global", use_container_width=True)
-                else:
-                    st.write("Teks ulasan tidak mencukupi untuk membuat Wordcloud.")
+            st.info("💡 Dataset yang Anda masukkan terdeteksi sebagai single-dataset (tidak memiliki kolom 'Nama_Aplikasi'), analisis spesifik per aplikasi dilewati.")
                     
     else:
         # Peringatan jika memori RAM benar-benar kosong total (belum ada proses data sama sekali)
